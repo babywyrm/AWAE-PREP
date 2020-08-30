@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
+
 ##
 ##
 #########################################
@@ -22,10 +23,11 @@ def format_text(title,item):
 	return text;
 
 r = requests.get('https://manageengine:8443/',verify=False, proxies=proxies)
-print format_text('r.status_code is: ',r.status_code)
-print format_text('r.headers is: ',r.headers)
-print format_text('r.cookies is: ',r.cookies)
-print format_text('r.text is: ',r.text)
+
+print(format_text('r.status_code is: ',r.status_code))
+print(format_text('r.headers is: ',r.headers))
+print(format_text('r.cookies is: ',r.cookies))
+print(format_text('r.text is: ',r.text))
 
 
 ##
