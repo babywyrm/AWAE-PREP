@@ -1,0 +1,12 @@
+GET /index.php/mail/mail/movetofolder/fromFolder/INBOX/toFolder/INBOX.Trash?resultContext=messageList&mailId%5B%5D=44 HTTP/1.1
+Host: atmail
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0
+Accept: application/json, text/javascript, */*
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+X-Requested-With: XMLHttpRequest
+Origin: http://atmail
+Connection: close
+Referer: http://atmail/index.php/mail
+Cookie: atmail6=e5j8phkmg6uemhlj3m0dnn9s66
+
